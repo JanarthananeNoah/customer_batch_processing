@@ -1,6 +1,7 @@
 package com.javatechie.spring.batch.config;
 
 import com.javatechie.spring.batch.entity.Customer;
+import com.javatechie.spring.batch.partition.CustomerPartitioner;
 import com.javatechie.spring.batch.repository.CustomerRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
@@ -8,6 +9,8 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.partition.PartitionHandler;
+import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
@@ -17,8 +20,8 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @EnableBatchProcessing
@@ -29,7 +32,7 @@ public class SpringBatchConfig {
 
     private StepBuilderFactory stepBuilderFactory;
 
-    private CustomerRepository customerRepository;
+    private CustomerWriter customerWriter;
 
 
     @Bean
@@ -65,28 +68,51 @@ public class SpringBatchConfig {
     }
 
     @Bean
-    public RepositoryItemWriter<Customer> writer() {
-        RepositoryItemWriter<Customer> writer = new RepositoryItemWriter<>();
-        writer.setRepository(customerRepository);
-        writer.setMethodName("save");
-        return writer;
+    public CustomerPartitioner partitioner(){
+        return new CustomerPartitioner();
+    }
+
+    public PartitionHandler partitionHandler(){
+        TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
+        taskExecutorPartitionHandler.setGridSize(2);
+        taskExecutorPartitionHandler.setTaskExecutor(taskExecutor());
+        taskExecutorPartitionHandler.setStep(slaveStep());
+        return taskExecutorPartitionHandler;
     }
 
     @Bean
-    public Step step1() {
-        return stepBuilderFactory.get("csv-step").<Customer, Customer>chunk(10)
+    public Step slaveStep() {
+        return stepBuilderFactory.get("csv-step").<Customer, Customer>chunk(500)
                 .reader(reader())
                 .processor(processor())
-                .writer(writer())
+                .writer(customerWriter)
+                .build();
+    }
+    @Bean
+    public Step masterStep() {
+        return stepBuilderFactory.get("masterStep").
+                partitioner(slaveStep().getName(),partitioner())
+                .partitionHandler(partitionHandler())
                 .build();
     }
 
     @Bean
     public Job runJob() {
         return jobBuilderFactory.get("importCustomers")
-                .flow(step1()).end().build();
+                .flow(masterStep()).end().build();
 
     }
+    @Bean
+   public TaskExecutor taskExecutor(){
+//       SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
+//       asyncTaskExecutor.setConcurrencyLimit(10);
+//       return asyncTaskExecutor;
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        threadPoolTaskExecutor.setMaxPoolSize(4);
+        threadPoolTaskExecutor.setCorePoolSize(4);
+        threadPoolTaskExecutor.setQueueCapacity(4);
+        return threadPoolTaskExecutor;
+   }
 
 
 }

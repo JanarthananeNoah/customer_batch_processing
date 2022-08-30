@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/jobs")
+@RequestMapping("/job")
 public class JobController {
 
     @Autowired
@@ -22,7 +22,7 @@ public class JobController {
     @Autowired
     private Job job;
 
-    @PostMapping("/importCustomers")
+    @PostMapping("/add-customer")
     public void importCsvToDBJob() {
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("startAt", System.currentTimeMillis()).toJobParameters();

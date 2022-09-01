@@ -117,14 +117,23 @@ public class BatchConfig {
         return new EmployeePartitioner();
     }
 
-    public PartitionHandler partitionHandler() {
+    public PartitionHandler partitionHandlerCustomer() {
+        TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
+        taskExecutorPartitionHandler.setGridSize(2);
+        taskExecutorPartitionHandler.setTaskExecutor(taskExecutor());
+        taskExecutorPartitionHandler.setStep(slaveStepCustomer());
+        return taskExecutorPartitionHandler;
+    }
+
+    public PartitionHandler partitionHandleEmployee() {
         TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
         taskExecutorPartitionHandler.setGridSize(2);
         taskExecutorPartitionHandler.setTaskExecutor(taskExecutor());
         taskExecutorPartitionHandler.setStep(SlaveStepEmployee());
-        taskExecutorPartitionHandler.setStep(slaveStepCustomer());
         return taskExecutorPartitionHandler;
     }
+
+
 
     @Bean
     public TaskExecutor taskExecutor() {
@@ -157,7 +166,7 @@ public class BatchConfig {
     public Step partitionCustomerStep() {
         return stepBuilderFactory.get("partition-Customer-Step").
                 partitioner(slaveStepCustomer().getName(), customerPartitioner())
-                .partitionHandler(partitionHandler())
+                .partitionHandler(partitionHandlerCustomer())
                 .build();
     }
 
@@ -165,7 +174,7 @@ public class BatchConfig {
     public Step partitionEmployeeStep(){
         return stepBuilderFactory.get("partition-Employee-Step").
                 partitioner(SlaveStepEmployee().getName(), employeePartitioner())
-                .partitionHandler(partitionHandler())
+                .partitionHandler(partitionHandleEmployee())
                 .build();
     }
 

@@ -32,7 +32,7 @@ public class CustomerPartitioner implements Partitioner {
             end += targetSize;
             number++;
         }
-        System.out.println("partition result"+result.toString());
+        System.out.println("partition result "+result.toString());
         return result;
     }
 }

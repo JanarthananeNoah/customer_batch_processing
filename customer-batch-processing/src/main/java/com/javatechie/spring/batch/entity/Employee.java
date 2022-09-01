@@ -14,6 +14,7 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Employee {
+
     @Id
     private int id;
 
@@ -28,6 +29,4 @@ public class Employee {
     private String jobTitle;
 
     private String skill;
-
-
 }

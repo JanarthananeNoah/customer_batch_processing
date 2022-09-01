@@ -1,4 +1,4 @@
-id,first_name,last_name,email,gender,job_title,skill
+id,firstName,lastName,email,gender,jobTitle,skill
 1,Kent,Eustes,keustes0@sun.com,Male,VP Product Management,Financial Risk
 2,Bernadine,Geist,bgeist1@arizona.edu,Genderfluid,Senior Financial Analyst,NSA-IAM
 3,Clair,Vayro,cvayro2@kickstarter.com,Bigender,Compensation Analyst,MMORPG

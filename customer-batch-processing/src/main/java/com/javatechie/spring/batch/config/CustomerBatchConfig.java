@@ -2,7 +2,7 @@ package com.javatechie.spring.batch.config;
 
 import com.javatechie.spring.batch.entity.Customer;
 import com.javatechie.spring.batch.partition.CustomerPartitioner;
-import com.javatechie.spring.batch.repository.CustomerRepository;
+
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -11,7 +11,6 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.partition.PartitionHandler;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
-import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -26,7 +25,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 @EnableBatchProcessing
 @AllArgsConstructor
-public class SpringBatchConfig {
+public class CustomerBatchConfig {
 
     private JobBuilderFactory jobBuilderFactory;
 
@@ -35,8 +34,10 @@ public class SpringBatchConfig {
     private CustomerWriter customerWriter;
 
 
+
+
     @Bean
-    public FlatFileItemReader<Customer> reader() {
+    public FlatFileItemReader<Customer> customerReader() {
         FlatFileItemReader<Customer> itemReader = new FlatFileItemReader<>();
         itemReader.setResource(new FileSystemResource("src/main/resources/customers.csv"));
         itemReader.setName("csvReader");
@@ -61,9 +62,8 @@ public class SpringBatchConfig {
         return lineMapper;
 
     }
-
     @Bean
-    public CustomerProcessor processor() {
+    public CustomerProcessor CustomerProcessor() {
         return new CustomerProcessor();
     }
 
@@ -76,22 +76,23 @@ public class SpringBatchConfig {
         TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
         taskExecutorPartitionHandler.setGridSize(2);
         taskExecutorPartitionHandler.setTaskExecutor(taskExecutor());
-        taskExecutorPartitionHandler.setStep(slaveStep());
+        taskExecutorPartitionHandler.setStep(slaveStep1());
         return taskExecutorPartitionHandler;
     }
 
     @Bean
-    public Step slaveStep() {
-        return stepBuilderFactory.get("csv-step").<Customer, Customer>chunk(500)
-                .reader(reader())
-                .processor(processor())
+    public Step slaveStep1() {
+        return stepBuilderFactory.get("csv-step-Customer").<Customer, Customer>chunk(500)
+                .reader(customerReader())
+                .processor(CustomerProcessor())
                 .writer(customerWriter)
                 .build();
     }
+
     @Bean
     public Step masterStep() {
         return stepBuilderFactory.get("masterStep").
-                partitioner(slaveStep().getName(),partitioner())
+                partitioner(slaveStep1().getName(),partitioner())
                 .partitionHandler(partitionHandler())
                 .build();
     }
@@ -104,9 +105,6 @@ public class SpringBatchConfig {
     }
     @Bean
    public TaskExecutor taskExecutor(){
-//       SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-//       asyncTaskExecutor.setConcurrencyLimit(10);
-//       return asyncTaskExecutor;
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setMaxPoolSize(4);
         threadPoolTaskExecutor.setCorePoolSize(4);

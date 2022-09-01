@@ -17,8 +17,7 @@ public class CustomerWriter implements ItemWriter<Customer> {
 
     @Override
     public void write(List<? extends Customer> list) throws Exception {
-        System.out.println("Thread Name : "+Thread.currentThread().getName());
-
+        System.out.println("Thread Name Customer: "+Thread.currentThread().getName());
         customerRepository.saveAll(list);
     }
 }
